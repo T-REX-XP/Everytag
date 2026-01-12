@@ -107,20 +107,30 @@ jobs:
           echo "PYTHONPATH=${{ runner.temp }}/ncs-workspace:$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Clean previous builds
-        run: rm -rf build-* && ls -la
+        run: rm -rf $GITHUB_WORKSPACE/build-* && ls -la
 
       - name: Build firmware - ${{ matrix.board }} (${{ matrix.config }})
         id: build
         run: |
-          cd $GITHUB_WORKSPACE
-          BUILD_DIR="build-${{ matrix.board }}-${{ matrix.config }}"
+          # Set up build environment
+          cd ${{ runner.temp }}/ncs-workspace
+          source zephyr/zephyr-env.sh
+          
+          BUILD_DIR="$GITHUB_WORKSPACE/build-${{ matrix.board }}-${{ matrix.config }}"
           
           echo "::group::Building for ${{ matrix.board }} with ${{ matrix.config }}"
           
+          # Build configuration
+          OVERLAY_ARGS=""
+          if [ ! -z "${{ matrix.overlay }}" ]; then
+            OVERLAY_ARGS="-DEXTRA_DTC_OVERLAY_FILE=$GITHUB_WORKSPACE/${{ matrix.overlay }}"
+          fi
+          
           west build -b ${{ matrix.board }} \
-            -c ${{ matrix.config }} \
-            --build-dir "$BUILD_DIR" \
-            -- -DEXTRA_DTC_OVERLAY_FILE=${{ matrix.overlay }} 2>&1 | tee build.log
+            -s $GITHUB_WORKSPACE \
+            -d "$BUILD_DIR" \
+            -- -DCONF_FILE=$GITHUB_WORKSPACE/${{ matrix.config }} \
+            $OVERLAY_ARGS 2>&1 | tee $GITHUB_WORKSPACE/build.log
           
           echo "::endgroup::"
           
@@ -134,7 +144,7 @@ jobs:
       - name: Generate build report
         if: always()
         run: |
-          BUILD_DIR="build-${{ matrix.board }}-${{ matrix.config }}"
+          BUILD_DIR="$GITHUB_WORKSPACE/build-${{ matrix.board }}-${{ matrix.config }}"
           echo "## Build Report: ${{ matrix.board }} - ${{ matrix.config }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ steps.build.outputs.BUILD_SUCCESS }}" >> $GITHUB_STEP_SUMMARY
@@ -161,7 +171,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs-${{ matrix.board }}-${{ matrix.config }}
-          path: build.log
+          path: ${{ github.workspace }}/build.log
           retention-days: 7
 
       - name: Upload firmware on success
@@ -169,7 +179,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nightly-firmware-${{ matrix.board }}-${{ matrix.config }}
-          path: build-${{ matrix.board }}-${{ matrix.config }}/zephyr/
+          path: ${{ github.workspace }}/build-${{ matrix.board }}-${{ matrix.config }}/zephyr/
           retention-days: 7
 
   summary:

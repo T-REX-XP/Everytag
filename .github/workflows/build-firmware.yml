@@ -137,24 +137,27 @@ jobs:
 
       - name: Build firmware - ${{ matrix.name }}
         run: |
-          cd $GITHUB_WORKSPACE
+          # Set up build environment
+          cd ${{ runner.temp }}/ncs-workspace
+          source zephyr/zephyr-env.sh
           
-          # Prepare extra overlays if specified
-          OVERLAY_FLAGS=""
+          # Build configuration
+          OVERLAY_ARGS=""
           if [ ! -z "${{ matrix.overlay }}" ]; then
-            OVERLAY_FLAGS="--extra-cflags -DCONFIG_OVERLAY=${{ matrix.overlay }}"
+            OVERLAY_ARGS="-DEXTRA_DTC_OVERLAY_FILE=$GITHUB_WORKSPACE/${{ matrix.overlay }}"
           fi
           
-          # Run west build
+          # Run west build pointing to project source
           west build -b ${{ matrix.board }} \
-            -c ${{ matrix.config }} \
-            --build-dir build-${{ matrix.board }}-${{ matrix.config }} \
-            -- -DEXTRA_DTC_OVERLAY_FILE=${{ matrix.overlay }}
+            -s $GITHUB_WORKSPACE \
+            -d $GITHUB_WORKSPACE/build-${{ matrix.board }}-${{ matrix.config }} \
+            -- -DCONF_FILE=$GITHUB_WORKSPACE/${{ matrix.config }} \
+            $OVERLAY_ARGS
         continue-on-error: true
 
       - name: Check build results - ${{ matrix.name }}
         run: |
-          BUILD_DIR="build-${{ matrix.board }}-${{ matrix.config }}"
+          BUILD_DIR="$GITHUB_WORKSPACE/build-${{ matrix.board }}-${{ matrix.config }}"
           if [ -f "$BUILD_DIR/zephyr/zephyr.hex" ]; then
             echo "✓ Build successful"
             ls -lh "$BUILD_DIR/zephyr/"
