@@ -30,19 +30,13 @@ jobs:
           - board: kkm_k4p
             config: prj-smpsvr-lowpower.conf
             overlay: ""
-          # DISABLED: nRF52810 boards - Insufficient FLASH (192KB device, firmware 95KB too large)
-          #   - board: kkm_p1_nrf52810
-          #     config: prj.conf
-          #     overlay: ""
-          #   - board: kkm_p1_nrf52810
-          #     config: prj-lowpower.conf
-          #     overlay: ""
-          #   - board: kkm_p11_nrf52810
-          #     config: prj.conf
-          #     overlay: ""
-          #   - board: kkm_p11_nrf52810
-          #     config: prj-lowpower.conf
-          #     overlay: ""
+          # nRF52810 boards - Using minimal config (no MCUboot)
+          - board: kkm_p1_nrf52810
+            config: prj-nrf52810-lowmem.conf
+            overlay: ""
+          - board: kkm_p11_nrf52810
+            config: prj-nrf52810-lowmem.conf
+            overlay: ""
           # DISABLED: nRF52805 boards - Likely insufficient FLASH
           #   - board: nrf52805_evm
           #     config: prj.conf

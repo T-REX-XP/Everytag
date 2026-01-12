@@ -43,12 +43,11 @@ jobs:
         #     overlay: ""
         #     name: "KKM K4P/K5 (nRF52833) - Low Power with MCUmgr"
           
-          # kkm_p1_nrf52810 - DISABLED: Insufficient FLASH (192KB, needs 245KB with MCUboot)
-          #   To enable: Create a minimal config or disable MCUboot
+          # kkm_p1_nrf52810 - Using minimal config (no MCUboot)
           - board: kkm_p1_nrf52810
-            config: prj.conf
+            config: prj-nrf52810-lowmem.conf
             overlay: ""
-            name: "KKM P1 (nRF52810) - Debug"
+            name: "KKM P1 (nRF52810) - Low Memory"
           
         #   # nrf52805_evm - Fanstel NRF52805EVM (nRF52805)
         #   - board: nrf52805_evm
