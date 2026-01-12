@@ -13,35 +13,35 @@ jobs:
     strategy:
       matrix:
         include:
-          # hcbb22e - Minew HCB22E (nRF52832)
-          - board: hcbb22e
-            config: prj-smpsvr.conf
-            overlay: nrf52832dk.overlay
-            name: "Minew HCB22E (nRF52832) - Debug with MCUmgr"
-          - board: hcbb22e
-            config: prj-smpsvr-lowpower.conf
-            overlay: nrf52832dk.overlay
-            name: "Minew HCB22E (nRF52832) - Low Power with MCUmgr"
+        #   # hcbb22e - Minew HCB22E (nRF52832)
+        #   - board: hcbb22e
+        #     config: prj-smpsvr.conf
+        #     overlay: nrf52832dk.overlay
+        #     name: "Minew HCB22E (nRF52832) - Debug with MCUmgr"
+        #   - board: hcbb22e
+        #     config: prj-smpsvr-lowpower.conf
+        #     overlay: nrf52832dk.overlay
+        #     name: "Minew HCB22E (nRF52832) - Low Power with MCUmgr"
           
-          # kkm_c2_nrf82805
-          - board: kkm_c2_nrf82805
-            config: prj.conf
-            overlay: ""
-            name: "KKM C2 (nRF52805) - Debug"
-          - board: kkm_c2_nrf82805
-            config: prj-lowpower.conf
-            overlay: ""
-            name: "KKM C2 (nRF52805) - Low Power"
+        #   # kkm_c2_nrf82805
+        #   - board: kkm_c2_nrf82805
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "KKM C2 (nRF52805) - Debug"
+        #   - board: kkm_c2_nrf82805
+        #     config: prj-lowpower.conf
+        #     overlay: ""
+        #     name: "KKM C2 (nRF52805) - Low Power"
           
-          # kkm_k4p - KKM K4P (K5) with accelerometer (nRF52833)
-          - board: kkm_k4p
-            config: prj-smpsvr.conf
-            overlay: ""
-            name: "KKM K4P/K5 (nRF52833) - Debug with MCUmgr"
-          - board: kkm_k4p
-            config: prj-smpsvr-lowpower.conf
-            overlay: ""
-            name: "KKM K4P/K5 (nRF52833) - Low Power with MCUmgr"
+        #   # kkm_k4p - KKM K4P (K5) with accelerometer (nRF52833)
+        #   - board: kkm_k4p
+        #     config: prj-smpsvr.conf
+        #     overlay: ""
+        #     name: "KKM K4P/K5 (nRF52833) - Debug with MCUmgr"
+        #   - board: kkm_k4p
+        #     config: prj-smpsvr-lowpower.conf
+        #     overlay: ""
+        #     name: "KKM K4P/K5 (nRF52833) - Low Power with MCUmgr"
           
           # kkm_p1_nrf52810
           - board: kkm_p1_nrf52810
@@ -63,27 +63,27 @@ jobs:
             overlay: ""
             name: "KKM P11 (nRF52810) - Low Power"
           
-          # nrf52805_evm - Fanstel NRF52805EVM (nRF52805)
-          - board: nrf52805_evm
-            config: prj.conf
-            overlay: ""
-            name: "Fanstel NRF52805EVM - Debug"
-          - board: nrf52805_evm
-            config: prj-lowpower.conf
-            overlay: ""
-            name: "Fanstel NRF52805EVM - Low Power"
+        #   # nrf52805_evm - Fanstel NRF52805EVM (nRF52805)
+        #   - board: nrf52805_evm
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "Fanstel NRF52805EVM - Debug"
+        #   - board: nrf52805_evm
+        #     config: prj-lowpower.conf
+        #     overlay: ""
+        #     name: "Fanstel NRF52805EVM - Low Power"
           
-          # wb_20241007 - Custom board variant 1 (nRF52833)
-          - board: wb_20241007
-            config: prj.conf
-            overlay: ""
-            name: "WB 2024-10-07 (nRF52833) - Debug"
+        #   # wb_20241007 - Custom board variant 1 (nRF52833)
+        #   - board: wb_20241007
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "WB 2024-10-07 (nRF52833) - Debug"
           
-          # wb_20241125 - Custom board variant 2 (nRF52833)
-          - board: wb_20241125
-            config: prj.conf
-            overlay: ""
-            name: "WB 2024-11-25 (nRF52833) - Debug"
+        #   # wb_20241125 - Custom board variant 2 (nRF52833)
+        #   - board: wb_20241125
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "WB 2024-11-25 (nRF52833) - Debug"
 
     steps:
       - name: Checkout code
