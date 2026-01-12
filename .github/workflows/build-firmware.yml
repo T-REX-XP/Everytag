@@ -151,7 +151,8 @@ jobs:
           west build -b ${{ matrix.board }} \
             -s $GITHUB_WORKSPACE \
             -d $GITHUB_WORKSPACE/build-${{ matrix.board }}-${{ matrix.config }} \
-            -- -DCONF_FILE=$GITHUB_WORKSPACE/${{ matrix.config }} \
+            -- -DBOARD_ROOT=$GITHUB_WORKSPACE \
+            -DCONF_FILE=$GITHUB_WORKSPACE/${{ matrix.config }} \
             $OVERLAY_ARGS
         continue-on-error: true
 
