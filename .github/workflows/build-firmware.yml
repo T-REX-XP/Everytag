@@ -1,0 +1,165 @@
+name: Build Firmware for NRF Devices
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        #   # hcbb22e - Minew HCB22E (nRF52832)
+        #   - board: hcbb22e
+        #     config: prj-smpsvr.conf
+        #     overlay: nrf52832dk.overlay
+        #     name: "Minew HCB22E (nRF52832) - Debug with MCUmgr"
+        #   - board: hcbb22e
+        #     config: prj-smpsvr-lowpower.conf
+        #     overlay: nrf52832dk.overlay
+        #     name: "Minew HCB22E (nRF52832) - Low Power with MCUmgr"
+          
+        #   # kkm_c2_nrf82805
+        #   - board: kkm_c2_nrf82805
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "KKM C2 (nRF52805) - Debug"
+        #   - board: kkm_c2_nrf82805
+        #     config: prj-lowpower.conf
+        #     overlay: ""
+        #     name: "KKM C2 (nRF52805) - Low Power"
+          
+        #   # kkm_k4p - KKM K4P (K5) with accelerometer (nRF52833)
+        #   - board: kkm_k4p
+        #     config: prj-smpsvr.conf
+        #     overlay: ""
+        #     name: "KKM K4P/K5 (nRF52833) - Debug with MCUmgr"
+        #   - board: kkm_k4p
+        #     config: prj-smpsvr-lowpower.conf
+        #     overlay: ""
+        #     name: "KKM K4P/K5 (nRF52833) - Low Power with MCUmgr"
+          
+          # kkm_p1_nrf52810
+          - board: kkm_p1_nrf52810
+            config: prj.conf
+            overlay: ""
+            name: "KKM P1 (nRF52810) - Debug"
+          - board: kkm_p1_nrf52810
+            config: prj-lowpower.conf
+            overlay: ""
+            name: "KKM P1 (nRF52810) - Low Power"
+          
+          # kkm_p11_nrf52810
+          - board: kkm_p11_nrf52810
+            config: prj.conf
+            overlay: ""
+            name: "KKM P11 (nRF52810) - Debug"
+          - board: kkm_p11_nrf52810
+            config: prj-lowpower.conf
+            overlay: ""
+            name: "KKM P11 (nRF52810) - Low Power"
+          
+        #   # nrf52805_evm - Fanstel NRF52805EVM (nRF52805)
+        #   - board: nrf52805_evm
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "Fanstel NRF52805EVM - Debug"
+        #   - board: nrf52805_evm
+        #     config: prj-lowpower.conf
+        #     overlay: ""
+        #     name: "Fanstel NRF52805EVM - Low Power"
+          
+        #   # wb_20241007 - Custom board variant 1 (nRF52833)
+        #   - board: wb_20241007
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "WB 2024-10-07 (nRF52833) - Debug"
+          
+        #   # wb_20241125 - Custom board variant 2 (nRF52833)
+        #   - board: wb_20241125
+        #     config: prj.conf
+        #     overlay: ""
+        #     name: "WB 2024-11-25 (nRF52833) - Debug"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up nRF Connect SDK
+        uses: nrfconnect/action-nrf-connect-sdk@main
+        with:
+          ncs-version: v2.8.0
+
+      - name: Build firmware - ${{ matrix.name }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          
+          # Prepare extra overlays if specified
+          OVERLAY_FLAGS=""
+          if [ ! -z "${{ matrix.overlay }}" ]; then
+            OVERLAY_FLAGS="--extra-cflags -DCONFIG_OVERLAY=${{ matrix.overlay }}"
+          fi
+          
+          # Run west build
+          west build -b ${{ matrix.board }} \
+            -c ${{ matrix.config }} \
+            --build-dir build-${{ matrix.board }}-${{ matrix.config }} \
+            -- -DEXTRA_DTC_OVERLAY_FILE=${{ matrix.overlay }}
+        continue-on-error: true
+
+      - name: Check build results - ${{ matrix.name }}
+        run: |
+          BUILD_DIR="build-${{ matrix.board }}-${{ matrix.config }}"
+          if [ -f "$BUILD_DIR/zephyr/zephyr.hex" ]; then
+            echo "✓ Build successful"
+            ls -lh "$BUILD_DIR/zephyr/"
+          else
+            echo "✗ Build failed or no output found"
+            exit 1
+          fi
+
+      - name: Upload firmware artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}-${{ matrix.config }}
+          path: build-${{ matrix.board }}-${{ matrix.config }}/zephyr/
+          retention-days: 30
+          compression-level: 6
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release assets
+        run: |
+          mkdir -p release_assets
+          for dir in firmware-*/; do
+            board_config="${dir%/}"
+            board_config="${board_config#firmware-}"
+            if [ -f "$dir/zephyr/zephyr.hex" ]; then
+              cp "$dir/zephyr/zephyr.hex" "release_assets/${board_config}.hex"
+            fi
+            if [ -f "$dir/zephyr/zephyr.bin" ]; then
+              cp "$dir/zephyr/zephyr.bin" "release_assets/${board_config}.bin"
+            fi
+          done
+          ls -lh release_assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release_assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

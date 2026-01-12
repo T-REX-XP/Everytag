@@ -1,0 +1,98 @@
+name: Firmware Validation
+
+on:
+  workflow_run:
+    workflows: ["Build Firmware for NRF Devices"]
+    types: [completed]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Validate firmware files
+        run: |
+          echo "## Firmware Validation Report" > validation.md
+          echo "" >> validation.md
+          
+          total_files=0
+          valid_files=0
+          
+          echo "### Firmware Files Found" >> validation.md
+          echo "\`\`\`" >> validation.md
+          
+          for hex_file in $(find artifacts -name "*.hex" -type f); do
+            total_files=$((total_files + 1))
+            size=$(stat -c%s "$hex_file" 2>/dev/null || stat -f%z "$hex_file")
+            filename=$(basename "$hex_file")
+            
+            # Validate HEX file format
+            if head -1 "$hex_file" | grep -q "^:"; then
+              valid_files=$((valid_files + 1))
+              status="✓"
+            else
+              status="✗"
+            fi
+            
+            echo "$status $filename ($size bytes)" >> validation.md
+          done
+          
+          echo "\`\`\`" >> validation.md
+          echo "" >> validation.md
+          echo "**Total files:** $total_files" >> validation.md
+          echo "**Valid files:** $valid_files" >> validation.md
+          echo "" >> validation.md
+          
+          if [ $total_files -eq 0 ]; then
+            echo "⚠️ No firmware files found!" >> validation.md
+            exit 1
+          fi
+          
+          if [ $valid_files -eq $total_files ]; then
+            echo "✓ All firmware files are valid" >> validation.md
+          else
+            echo "⚠️ Some firmware files may be invalid" >> validation.md
+          fi
+          
+          cat validation.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Calculate checksums
+        run: |
+          echo "### Firmware Checksums (SHA256)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          find artifacts -name "*.hex" -o -name "*.bin" | sort | while read file; do
+            echo "$(sha256sum "$file")" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate CRC32 checksums
+        run: |
+          echo "### CRC32 Checksums" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          find artifacts -name "*.bin" -type f | sort | while read file; do
+            crc=$(cksum "$file" | awk '{print $1}')
+            filename=$(basename "$file")
+            echo "$filename: $crc" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-validation-report
+          path: validation.md
+          retention-days: 30
