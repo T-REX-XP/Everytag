@@ -100,17 +100,33 @@ jobs:
             gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
           pip3 install west
 
-      - name: Set up nRF Connect SDK
+      - name: Cache NCS workspace
+        id: cache-ncs
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ncs-workspace
+          key: ncs-v2.8.0-${{ runner.os }}-cache
+          restore-keys: ncs-v2.8.0-${{ runner.os }}
+
+      - name: Set up nRF Connect SDK (cached)
+        if: steps.cache-ncs.outputs.cache-hit == 'true'
+        run: |
+          echo "ZEPHYR_BASE=${{ runner.temp }}/ncs-workspace/zephyr" >> $GITHUB_ENV
+          echo "PYTHONPATH=${{ runner.temp }}/ncs-workspace:$PYTHONPATH" >> $GITHUB_ENV
+          echo "Using cached NCS workspace"
+
+      - name: Set up nRF Connect SDK (fresh)
+        if: steps.cache-ncs.outputs.cache-hit != 'true'
         run: |
           # Create workspace directory
           mkdir -p ${{ runner.temp }}/ncs-workspace
           cd ${{ runner.temp }}/ncs-workspace
           
-          # Initialize west workspace
+          # Initialize west workspace with minimal modules
           west init -m https://github.com/nrfconnect/sdk-nrf.git --mr v2.8.0
           
-          # Update dependencies
-          west update --narrow -o=--depth=1
+          # Update with aggressive shallow cloning
+          west update --narrow --fetch-opt=--depth=1 -o=--depth=1 --group-filter=-optional
           
           # Install Python requirements
           pip3 install -r zephyr/scripts/requirements.txt
